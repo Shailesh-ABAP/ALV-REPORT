@@ -1,0 +1,388 @@
+*&---------------------------------------------------------------------*
+*& Report  ERPSLS_CUSTOMERS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+report  erpsls_customers.
+
+type-pools: slis.
+
+tables: sdcustview.
+
+data: lrt_fieldcat type slis_t_fieldcat_alv,
+      lrs_fieldcat like line of lrt_fieldcat,
+      lrs_layout type slis_layout_alv,
+      lrv_status type slis_formname value 'SET_STATUS',
+      lrv_user_command type slis_formname value 'USER_COMMAND',
+      lrv_repid like sy-repid value sy-repid,
+      lv_incoversion type i.
+
+data: lrs_customers type sdcustview,
+      lrt_customers type table of sdcustview.
+
+
+selection-screen begin of block kunnr with frame title text-s05.
+  select-options: skunnr for sdcustview-kunnr,
+                  sktokd for sdcustview-ktokd.
+selection-screen end of block kunnr.
+selection-screen begin of block addrdata with frame title text-s01.
+  select-options: sname for sdcustview-name,
+                  sname2 for sdcustview-name2,
+                  sstreet for sdcustview-street,
+                  sstrnum for sdcustview-street_no,
+                  spcode for sdcustview-pcode,
+                  scity for sdcustview-city,
+                  scountry for sdcustview-country,
+                  semail for sdcustview-smtp_addr,
+                  ssortl for sdcustview-sortl.
+selection-screen end of block addrdata.
+selection-screen begin of block orgdata with frame title text-s02.
+  select-options: svkorg for sdcustview-vkorg memory id vko,
+                  svtweg for sdcustview-vtweg memory id vtw,
+                  sspart for sdcustview-spart memory id spa,
+                  svkbur for sdcustview-vkbur memory id vkb,
+                  svkgrp for sdcustview-vkgrp memory id vkg,
+                  sbzirk for sdcustview-bzirk memory id sbz.
+*  selection-screen skip.
+  parameters: pwoorg as checkbox USER-COMMAND check1 default ' '.
+selection-screen end of block orgdata.
+
+selection-screen begin of block marketdata with frame title text-s07.
+  select-options: skukla for sdcustview-kukla,
+                  sbrsch for sdcustview-brsch.
+ selection-screen end of block marketdata.
+
+selection-screen begin of block salesdata with frame title text-s06.
+  select-options: skonda for sdcustview-konda,
+                  spltyp for sdcustview-pltyp,
+                  svsbed for sdcustview-vsbed,
+                  sinco1 for sdcustview-inco1,
+                  sinco2 for sdcustview-inco2,
+                  sincov2 for sdcustview-incov,
+                  sincov22 for sdcustview-inco2_l,
+                  sincov23 for sdcustview-inco3_l,
+                  szterm for sdcustview-zterm.
+ selection-screen end of block salesdata.
+selection-screen begin of block blockdata with frame title text-s03.
+  select-options: saufsdz for sdcustview-aufsdz,
+                  saufsdv for sdcustview-aufsdv,
+                  slifsdz for sdcustview-lifsdz,
+                  slifsdv for sdcustview-lifsdv,
+                  sfaksdz for sdcustview-faksdz,
+                  sfaksdv for sdcustview-faksdv.
+selection-screen end of block blockdata.
+selection-screen begin of block deldata with frame title text-s04.
+  parameters: ploevmz like sdcustview-loevmz,
+              ploevmv like sdcustview-loevmv,
+              pnodel like sdcustview-nodel.
+selection-screen end of block deldata.
+
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR szterm-low.
+    CALL FUNCTION 'FI_F4_ZTERM'
+      IMPORTING
+        E_ZTERM = szterm-low.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR szterm-high.
+    CALL FUNCTION 'FI_F4_ZTERM'
+      IMPORTING
+        E_ZTERM = szterm-high.
+
+
+at selection-screen output.
+  if cl_sd_618_switch_check=>sd_sfws_inco_versions( ) EQ abap_false.
+    " Using the original incoterms so inco1 and inco2
+    lv_incoversion =  2000.
+  else.
+  " Using the new incoterms so incov, inco2_l and inco3_l
+    lv_incoversion = 2010.
+  endif.
+
+loop at screen.
+  if lv_incoversion = 2000.
+      if     screen-name cs 'sincov2'.
+        screen-active = 0. " hide field
+      elseif screen-name cs 'sincov22'.
+        screen-active = 0. " hide field
+      elseif screen-name cs 'sincov23'.
+        screen-active = 0. " hide field
+      endif.
+  else.
+      if     screen-name cs 'sinco1'.
+        screen-active = 0. " hide field
+      elseif screen-name cs 'sinco2'.
+        screen-active = 0. " hide field
+      endif.
+  endif.
+
+
+  case pwoorg.
+    when 'X'.
+      if     screen-name cs 'vkorg'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'svtweg'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sspart'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'svtweg'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'svkbur'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'svkgrp'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sbzirk'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'skonda'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'spltyp'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'svsbed'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'szterm'.
+        screen-input = 0. " grey out a field
+      elseif     screen-name cs 'sinco1'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sinco2'.
+        screen-input = 0. " grey out a field
+      elseif     screen-name cs 'sincov'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sincov22'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sincov23'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'saufsdv'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'slifsdv'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'sfaksdv'.
+        screen-input = 0. " grey out a field
+      elseif screen-name cs 'ploevmv'.
+        screen-input = 0. " grey out a field
+      endif.
+  endcase.
+  modify screen.
+endloop.
+start-of-selection.
+  perform data_selection.
+  if lrt_customers[] is initial.
+    message s490(vr).
+    exit.
+  endif.
+
+
+end-of-selection.
+  perform fill_fieldcatalog.
+  perform build_layout.
+  perform reuse_alv_list_display.
+
+
+*--------------
+* form routines
+*--------------
+form data_selection.
+
+  data: ls_tfmc type tfmc,
+        ls_sname like line of sname,
+        ls_scity like line of scity,
+        ls_rg_mcode type srg_char25,
+        lt_rg_mcod1 type trg_char25,
+        lt_rg_mcod3 type trg_char25.
+
+  if not sname[] is initial.
+    clear ls_tfmc.
+    select single *
+           from tfmc
+           into ls_tfmc
+           where ktoid eq 'D'
+             and fldna eq 'NAME1'.
+    if sy-subrc = 0 and
+       ( ls_tfmc-fldnr = 1 or
+         ls_tfmc-fldnr = 3 ).
+      loop at sname[] into ls_sname.
+        move-corresponding ls_sname to ls_rg_mcode.
+        translate ls_rg_mcode-low to upper case.  "#EC TRANSLANG
+        translate ls_rg_mcode-high to upper case. "#EC TRANSLANG
+        if ls_tfmc-fldnr eq 1.
+          append ls_rg_mcode to lt_rg_mcod1.
+        endif.
+        if ls_tfmc-fldnr eq 3.
+          append ls_rg_mcode to lt_rg_mcod3.
+        endif.
+      endloop.
+      clear sname.
+      refresh sname[].
+    endif.
+  endif.
+  if not scity[] is initial.
+    clear ls_tfmc.
+    select single *
+           from tfmc
+           into ls_tfmc
+           where ktoid eq 'D'
+             and fldna eq 'ORT01'.
+    if sy-subrc = 0 and
+       ( ls_tfmc-fldnr = 1 or
+         ls_tfmc-fldnr = 3 ).
+      loop at scity[] into ls_scity.
+        move-corresponding ls_scity to ls_rg_mcode.
+        translate ls_rg_mcode-low to upper case.  "#EC TRANSLANG
+        translate ls_rg_mcode-high to upper case. "#EC TRANSLANG
+        if ls_tfmc-fldnr eq 1.
+          append ls_rg_mcode to lt_rg_mcod1.
+        endif.
+        if ls_tfmc-fldnr eq 3.
+          append ls_rg_mcode to lt_rg_mcod3.
+        endif.
+      endloop.
+      clear scity.
+      refresh scity[].
+    endif.
+  endif.
+
+* check authorizations to display customer data
+perform authority_check.
+
+  call function 'ERPSLS_CUSTOMERS'
+    exporting
+      it_rg_kunnr     = skunnr[]
+      it_rg_name      = sname[]
+      it_rg_street    = sstreet[]
+      it_rg_street_no = sstrnum[]
+      it_rg_pcode     = spcode[]
+      it_rg_city      = scity[]
+      it_rg_country   = scountry[]
+      it_rg_sortl     = ssortl[]
+      it_rg_mcod1     = lt_rg_mcod1[]
+      it_rg_mcod3     = lt_rg_mcod3[]
+      if_woorg        = pwoorg
+      it_rg_vkorg     = svkorg[]
+      it_rg_vtweg     = svtweg[]
+      it_rg_spart     = sspart[]
+      it_rg_vkbur     = svkbur[]
+      it_rg_vkgrp     = svkgrp[]
+      it_rg_aufsdz    = saufsdz[]
+      it_rg_aufsdv    = saufsdv[]
+      it_rg_lifsdz    = slifsdz[]
+      it_rg_lifsdv    = slifsdv[]
+      it_rg_faksdz    = sfaksdz[]
+      it_rg_faksdv    = sfaksdv[]
+      if_loevmz       = ploevmz
+      if_loevmv       = ploevmv
+      if_nodel        = pnodel
+
+      it_rg_name2     = sname2[]
+      it_rg_email     = semail[]
+      it_rg_bzirk     = sbzirk[]
+      it_rg_kukla     = skukla[]
+      it_rg_brsch     = sbrsch[]
+      it_rg_konda     = skonda[]
+      it_rg_vsbed     = svsbed[]
+      it_rg_inco1     = sinco1[]
+      it_rg_inco2     = sinco2[]
+      it_rg_zterm     = szterm[]
+      it_rg_incov     = sincov2[]
+      it_rg_inco2_l   = sincov22[]
+      it_rg_inco3_l   = sincov23[]
+      it_rg_pltyp     = spltyp[]
+      it_rg_ktokd     = sktokd[]
+    tables
+      et_customers    = lrt_customers[].
+
+endform.
+
+
+form set_status using extab type slis_t_extab.
+
+  delete extab where fcode = '&AVE'.
+  delete extab where fcode = '&OAD'.
+  delete extab where fcode = '&ERW'.
+  set pf-status 'STATUS_CUSTLIST_1' excluding extab.
+
+endform.
+
+
+form user_command using r_ucomm like sy-ucomm
+                        rs_selfield type slis_selfield.
+
+  check rs_selfield-tabindex > 0.
+  read table lrt_customers into lrs_customers index rs_selfield-tabindex.
+  set parameter id 'KUN' field lrs_customers-kunnr.
+  set parameter id 'VKO' field lrs_customers-vkorg.
+  set parameter id 'VTW' field lrs_customers-vtweg.
+  set parameter id 'SPA' field lrs_customers-spart.
+  case r_ucomm.
+    when  'DISPLAY'.
+      call transaction 'VD03' and skip first screen. "#EC CI_CALLTA
+    when  'CHANGE'.
+      call transaction 'VD02' and skip first screen. "#EC CI_CALLTA
+  endcase.
+
+endform.
+
+
+form fill_fieldcatalog.
+
+  call function 'REUSE_ALV_FIELDCATALOG_MERGE'
+    exporting
+         i_structure_name = 'SDCUSTVIEW'
+    changing
+         ct_fieldcat      = lrt_fieldcat.
+
+endform.
+
+
+form build_layout.
+
+  lrs_layout-colwidth_optimize = 'X'.
+  lrs_layout-detail_initial_lines = 'X'.
+
+endform.
+
+
+form reuse_alv_list_display.
+
+  call function 'REUSE_ALV_GRID_DISPLAY'   ##FM_SUBRC_OK
+    exporting
+      i_callback_program        = lrv_repid
+      i_callback_pf_status_set  = lrv_status
+      i_callback_user_command   = lrv_user_command
+      is_layout                 = lrs_layout
+      it_fieldcat               = lrt_fieldcat
+      i_save                    = 'A'
+    tables
+      t_outtab                  = lrt_customers
+    exceptions
+      program_error             = 1
+      others                    = 2.
+
+endform.
+*&---------------------------------------------------------------------*
+*&      Form  AUTHORITY_CHECK
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM AUTHORITY_CHECK .
+
+*   Check general application authorization
+    authority-check object 'F_KNA1_APP'
+      id 'ACTVT' field '03'
+      id 'APPKZ' field 'V'.
+    if not sy-subrc is initial.
+*     No general authorization for address display
+      message e322(f2) with space 'F_KNA1_APP' '03' 'V'.
+    endif.
+*   Check general display authorization
+    authority-check object 'F_KNA1_GEN'
+      id 'ACTVT' field '03'.
+    if not sy-subrc is initial.
+*     No general authorization for address display
+      message e371(f2) with 'F_KNA1_GEN' '03'.
+   endif.
+
+ENDFORM.
